@@ -1,6 +1,6 @@
 all:test
 
-CPPFLAGS+=-std=c++1y -Wall -pedantic
+CPPFLAGS+=-std=c++1z -Wall -pedantic
 CPPFLAGS+=-g -O2 -DDEBUG -UNDEBUG
 #BOOST_DIR=/mnt/LARGE/MODULAR_BOOST/modular-boost
 BOOST_DIR=/home/sehe/custom/boost_1_59_0
@@ -19,7 +19,7 @@ LDFLAGS+=-lboost_date_time -lboost_program_options -lboost_filesystem
 #CXX=g++-4.9
 # CXX=/usr/lib/gcc-snapshot/bin/g++
 # CC=/usr/lib/gcc-snapshot/bin/gcc
-# CXX=clang++-3.6 -stdlib=libc++
+CXX=clang++-3.6 #-stdlib=libc++
 # CC=clang
 
 %.S:%.cpp

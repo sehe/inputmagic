@@ -1,6 +1,8 @@
 #include <iostream>
 #include <functional>
 #include <vector>
+#include <tuple>
+#include <experimental/tuple>
 
 namespace inputmagic {
 
@@ -101,9 +103,17 @@ namespace inputmagic {
 
     };
 
-    template <typename Msg, typename T>
-        auto prompt(Msg&& msg, T& v) {
-            auto prompter = [msg=std::forward<Msg>(msg)](std::ostream& os) { os << msg; };
+    struct stream_to {
+        std::ostream& os_;
+        template <typename V> void operator()(V const& v) const { os_ << v; }
+        template <typename V, typename... Vs> void operator()(V const& v, Vs const&... vs) const { os_ << v; (*this)(vs...); }
+    };
+
+    template <typename T, typename... Msg>
+        auto prompt(T& v, Msg&&... msg) {
+            auto prompter = [stored=std::make_tuple(std::forward<Msg>(msg)...)](std::ostream& os) { 
+                std::experimental::apply(stream_to{os}, stored);
+            };
             auto reader   = [](std::istream& is, T& v) -> auto& { return is >> v; };
 
             return checked_input<T, decltype(prompter), decltype(reader)> {
@@ -113,9 +123,11 @@ namespace inputmagic {
             };
         }
 
-    template <typename Msg>
-        auto read_line(Msg&& msg, std::string& v) {
-            auto prompter = [msg=std::forward<Msg>(msg)](std::ostream& os) { os << msg; };
+    template <typename T, typename... Msg>
+        auto read_line(T& v, Msg&&... msg) {
+            auto prompter = [stored=std::make_tuple(std::forward<Msg>(msg)...)](std::ostream& os) { 
+                std::experimental::apply(stream_to{os}, stored);
+            };
             auto reader   = [](std::istream& is, std::string& v) -> auto& { return std::getline(is, v); };
 
             return checked_input<std::string, decltype(prompter), decltype(reader)> {
@@ -143,10 +155,10 @@ int main() {
 
     std::string lname;
 
-    if (cin >> read_line("Input customer's lastname: ", lname)
-            .validate(alpha_only,            "You can only input alpha here!")
-            .validate(mem_fn(&string::size), "Last name can not be empty")
-            .validate(correct_space,         "Cannot have spaces there"))
+    if (cin >> read_line(lname, "Input customer's lastname (previous: '", std::ref(lname), "'): ")
+            .validate(alpha_only,                         "You can only input alpha here!")
+            .validate([](auto& s) { return !s.empty(); }, "Last name can not be empty")
+            .validate(correct_space,                      "Cannot have spaces there"))
     {
         cout << "Success: " << lname << "\n";
     }
